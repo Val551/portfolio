@@ -161,6 +161,7 @@
   /* Semantic z-scale — never an arbitrary 9999 */
   --z-ambient: 0;
   --z-content: 10;
+  --z-screensaver: 200;
   --z-toast: 300;
 
   /* Ambient layer, driven at runtime by useAmbient() */
