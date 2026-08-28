@@ -1,26 +1,1232 @@
 @import "tailwindcss";
+@import "../styles/theme.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================
+   Base
+   ============================================================ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background-color: var(--color-void);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-void);
+  color: var(--color-ink-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.65;
+  font-kerning: normal;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* The shell owns the viewport: the home screen never scrolls, only the
+     inside of an opened hub does. */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--color-ink);
+  text-wrap: balance;
+  font-weight: 600;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background-color: var(--color-ps);
+  color: var(--color-ink);
+}
+
+/* ============================================================
+   Focus — the console focus ring and the accessibility
+   affordance are deliberately the same object.
+   ============================================================ */
+
+/* In @layer base so a component can opt out with `focus-visible:outline-none`
+   and draw its own indicator — a circular avatar or a tile ring. Unlayered,
+   this rule outranks every Tailwind utility and paints a stray rectangle
+   over components that already show focus their own way. */
+@layer base {
+  /* Tailwind v4's preflight sets `button { cursor: default }`, which left
+     every button on the site — the tiles, Open, Close, Copy — giving no
+     pointer feedback. Fixed once at the base layer rather than patched onto
+     each control. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid oklch(1 0 0 / 0.9);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Pointer users don't get the ring; keyboard users always do. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Programmatic focus targets — the hub heading we move focus to on open —
+     should not paint a ring. The reader did not navigate there by keyboard;
+     the ring would read as a stray box drawn around the title. */
+  [tabindex="-1"]:focus,
+  [tabindex="-1"]:focus-visible {
+    outline: none;
+  }
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+
+.measure {
+  max-width: var(--measure);
+}
+
+/* ============================================================
+   Reduced motion — nothing is removed, only calmed.
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  :root {
+    --d-focus: 120ms;
+    --d-ui: 140ms;
+    --d-ambient: 200ms;
+  }
+}
+
+/* ============================================================
+   Ambient background
+   The dynamic background is the color system, not decoration.
+   Registering the hue as a typed custom property lets it
+   interpolate natively, so the crossfade costs no JS.
+   ============================================================ */
+
+@property --ambient-hue {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 252;
+}
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-ambient);
+  pointer-events: none;
+  background-color: var(--color-void);
+  /* Expo, not linear. A room changing colour is a light settling, and every
+     other curve in this project decelerates; linear was the one place the
+     motion read as a machine stepping through values. */
+  transition:
+    --ambient-hue var(--d-ambient) var(--ease-out-expo),
+    opacity var(--d-ui) var(--ease-out-quart);
+  contain: strict;
+
+  /* Signed pan, -0.5 to 0.5, from the focused tile's place in the row.
+     Each layer multiplies it by its own depth below. */
+  --pan: calc(var(--ambient-pan, 0) - 0.5);
+}
+
+/* Opening a hub drops the room back behind the content. It also darkens the
+   backdrop under the hub's translucent panels, which only helps their text. */
+.ambient[data-recessed] {
+  opacity: 0.72;
+}
+
+/* ---- Parallax ------------------------------------------------------------
+   `translate` rather than `transform`: the drift keyframes below already own
+   `transform`, and the individual transform properties compose with it
+   instead of fighting it. Depth is the whole point of the differing
+   multipliers — near layers travel furthest, the far bokeh barely moves. */
+
+.ambient__field,
+.ambient__blobs,
+.ambient__bokeh,
+.ambient__bokeh--far,
+.ambient__bloom {
+  transition: translate var(--d-ambient) var(--ease-out-expo);
+}
+
+.ambient__field,
+.ambient__bloom {
+  translate: calc(var(--pan) * -4%) 0;
+}
+
+.ambient__blobs {
+  translate: calc(var(--pan) * -7%) 0;
+}
+
+.ambient__bokeh {
+  translate: calc(var(--pan) * -11%) 0;
+}
+
+.ambient__bokeh--far {
+  translate: calc(var(--pan) * -4.5%) 0;
+}
+
+.ambient__field {
+  position: absolute;
+  inset: -15%;
+  background-image:
+    /* Key light spilling in from the top-left, as in the reference. */
+    radial-gradient(
+      52% 46% at 12% -6%,
+      oklch(from var(--color-keylight) l c h / 0.72),
+      transparent 70%
+    ),
+    /* A second, softer bounce below it. */
+    radial-gradient(
+      44% 40% at 4% 26%,
+      oklch(0.74 0.03 80 / 0.34),
+      transparent 74%
+    ),
+    /* The focused app tints the room, but only just — chroma stays low
+       enough that the chrome still reads as grey rather than coloured. */
+    radial-gradient(
+      58% 54% at 78% 74%,
+      oklch(0.5 0.13 var(--ambient-hue) / 0.55),
+      transparent 70%
+    ),
+    radial-gradient(
+      64% 60% at 50% 50%,
+      oklch(0.34 0.055 var(--ambient-hue) / 0.6),
+      transparent 74%
+    );
+  transform-origin: 50% 40%;
+}
+
+/* PS5 backgrounds breathe. Transform only — cheap, and it never
+   repaints the gradient. */
+@media (prefers-reduced-motion: no-preference) {
+  .ambient__field {
+    animation: ambient-drift 34s var(--ease-out-quart) infinite alternate;
+  }
+}
+
+@keyframes ambient-drift {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.09) translate3d(-1.5%, 1.5%, 0);
+  }
+}
+
+/* ---- Bloom ---------------------------------------------------------------
+   One swell of light as a selection lands: the room acknowledging the change
+   rather than only reporting it in a new colour.
+
+   It blooms LOW AND RIGHT, behind the key art, not at the key light where it
+   started out. The top-left is the most heavily scrimmed region on the page
+   precisely because that is where all the type lives, so light added there
+   was crushed to invisibility — at alpha 0.62 it still could not be seen in
+   a screenshot. The lower right is the one large area with almost no scrim
+   and no text at any breakpoint, so the same effect reads clearly at 5.7:1
+   worst-case contrast instead of disappearing.
+
+   Sits BEFORE the scrim in the stack regardless. The scrim is what
+   guarantees text contrast over an arbitrary hue, so anything that adds
+   light belongs underneath it.
+
+   Starts and ends at opacity 0. If the clock stalls at either end the
+   element is invisible, which is exactly the resting state — this can never
+   strand a bright wash over the type. */
+.ambient__bloom {
+  position: absolute;
+  inset: -10%;
+  opacity: 0;
+  background-image: radial-gradient(
+    36% 40% at 78% 66%,
+    oklch(0.66 0.14 var(--ambient-hue) / 0.8),
+    transparent 68%
+  );
+  animation: ambient-bloom 1000ms var(--ease-out-expo) both;
+}
+
+@keyframes ambient-bloom {
+  0% {
+    opacity: 0;
+    scale: 0.95;
+  }
+  32% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.04;
+  }
+}
+
+/* The scrim is not optional: it is the only thing guaranteeing text
+   contrast over an arbitrary ambient hue. It holds the backdrop under
+   OKLab L 0.36 at its brightest point, and under ~L 0.30 everywhere
+   type is actually placed, which is what keeps 13px ink-faint above
+   the 4.5:1 floor. Measured, not estimated: see the ink block in
+   theme.css for the method and the numbers. */
+.ambient__scrim {
+  position: absolute;
+  inset: 0;
+  background-image:
+    /* The key light is bright where the status bar sits, so the top band
+       gets the heaviest scrim on the page. */
+    linear-gradient(
+      to bottom,
+      oklch(0.145 0.003 75 / 0.4) 0%,
+      oklch(0.145 0.003 75 / 0.2) 22%,
+      oklch(0.145 0.003 75 / 0.28) 58%,
+      oklch(0.145 0.003 75 / 0.72) 100%
+    ),
+    /* And a leftward wash, because that is the column the type occupies. */
+    linear-gradient(
+      to right,
+      oklch(0.145 0.003 75 / 0.24) 0%,
+      oklch(0.145 0.003 75 / 0.06) 42%,
+      transparent 70%
+    );
+}
+
+/* Fine grain keeps the gradients from banding and reads as
+   photographic rather than as a CSS gradient. */
+.ambient__bokeh {
+  position: absolute;
+  inset: -8%;
+  /* Warm gold, weighted right-of-centre and low, matching the reference.
+     Deliberately kept off the left column, where the title and tile row
+     live, so a bright orb can never sit behind text. */
+  background-image:
+    radial-gradient(circle 3.50rem at 72.0% 41.8%, oklch(0.8 0.06 86 / 0.096), transparent 100%),
+    radial-gradient(circle 3.83rem at 93.6% 45.0%, oklch(0.8 0.06 86 / 0.093), transparent 100%),
+    radial-gradient(circle 5.99rem at 56.4% 42.9%, oklch(0.8 0.06 72 / 0.051), transparent 100%),
+    radial-gradient(circle 3.96rem at 97.4% 86.8%, oklch(0.8 0.06 86 / 0.063), transparent 100%),
+    radial-gradient(circle 5.35rem at 82.1% 31.6%, oklch(0.8 0.06 80 / 0.052), transparent 100%),
+    radial-gradient(circle 0.79rem at 91.5% 39.1%, oklch(0.86 0.09 68 / 0.336), transparent 100%),
+    radial-gradient(circle 0.30rem at 78.1% 25.3%, oklch(0.86 0.09 68 / 0.194), transparent 100%),
+    radial-gradient(circle 0.70rem at 54.5% 46.2%, oklch(0.86 0.09 68 / 0.306), transparent 100%),
+    radial-gradient(circle 0.26rem at 72.4% 79.8%, oklch(0.86 0.09 68 / 0.256), transparent 100%),
+    radial-gradient(circle 0.74rem at 83.4% 52.5%, oklch(0.86 0.09 78 / 0.278), transparent 100%),
+    radial-gradient(circle 0.28rem at 62.8% 30.0%, oklch(0.86 0.09 78 / 0.387), transparent 100%),
+    radial-gradient(circle 0.64rem at 72.0% 76.1%, oklch(0.86 0.09 88 / 0.371), transparent 100%),
+    radial-gradient(circle 0.85rem at 73.8% 36.3%, oklch(0.86 0.09 88 / 0.332), transparent 100%),
+    radial-gradient(circle 0.81rem at 92.5% 85.2%, oklch(0.86 0.09 88 / 0.186), transparent 100%),
+    radial-gradient(circle 0.54rem at 85.1% 86.6%, oklch(0.86 0.09 68 / 0.330), transparent 100%),
+    radial-gradient(circle 0.88rem at 80.6% 53.3%, oklch(0.86 0.09 68 / 0.391), transparent 100%),
+    radial-gradient(circle 0.58rem at 62.4% 49.4%, oklch(0.86 0.09 78 / 0.333), transparent 100%),
+    radial-gradient(circle 0.64rem at 55.9% 70.8%, oklch(0.86 0.09 68 / 0.383), transparent 100%),
+    radial-gradient(circle 0.47rem at 65.0% 86.8%, oklch(0.86 0.09 78 / 0.382), transparent 100%),
+    radial-gradient(circle 0.56rem at 89.0% 44.6%, oklch(0.86 0.09 88 / 0.179), transparent 100%),
+    radial-gradient(circle 0.36rem at 59.7% 26.2%, oklch(0.86 0.09 68 / 0.320), transparent 100%),
+    radial-gradient(circle 0.51rem at 43.6% 18.3%, oklch(0.93 0.04 84 / 0.269), transparent 100%),
+    radial-gradient(circle 0.56rem at 12.4% 15.5%, oklch(0.93 0.04 84 / 0.328), transparent 100%),
+    radial-gradient(circle 0.30rem at 24.1% 21.6%, oklch(0.93 0.04 84 / 0.319), transparent 100%),
+    radial-gradient(circle 0.34rem at 22.1% 15.1%, oklch(0.93 0.04 84 / 0.244), transparent 100%),
+    radial-gradient(circle 0.28rem at 14.4% 21.0%, oklch(0.93 0.04 84 / 0.208), transparent 100%);
+  /* Soft edges: without this they read as flat blobs rather than
+     out-of-focus light. Cheap here because the layer only transforms, so
+     the blur is rasterised once. */
+  filter: blur(2px);
+  transform-origin: 60% 40%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ambient__bokeh {
+    animation:
+      bokeh-drift 52s ease-in-out infinite alternate,
+      bokeh-breathe 17s ease-in-out infinite alternate;
+  }
+
+  /* The far layer moves less and slower — that difference is the parallax. */
+  .ambient__bokeh--far {
+    animation:
+      bokeh-drift-far 104s ease-in-out infinite alternate,
+      bokeh-breathe 26s ease-in-out infinite alternate -9s;
+  }
+}
+
+.ambient__bokeh--far {
+  transform: scale(0.72);
+  opacity: 0.55;
+  filter: blur(3.5px);
+}
+
+@keyframes bokeh-drift-far {
+  from {
+    transform: scale(0.72) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(0.78) translate3d(-1.6%, 2.2%, 0);
+  }
+}
+
+@keyframes bokeh-breathe {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bokeh-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2.5%, -3%, 0) scale(1.06);
+  }
+}
+
+.ambient__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.24;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+@keyframes boot-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+
+
+/* ============================================================
+   Console shell
+   ============================================================ */
+
+/* The title and blurb are re-keyed per focused app, so React remounts them
+   and the animation replays — a swap, not a transition, so nothing is ever
+   gated behind a clock that might be frozen. */
+.hub-title {
+  animation: hub-title-in 320ms var(--ease-out-expo) both;
+}
+
+@keyframes hub-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hub {
+  animation: hub-in 320ms var(--ease-out-expo) both;
+}
+
+@keyframes hub-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-title,
+  .hub {
+    animation: boot-fade 150ms linear both;
+  }
+}
+
+/* Content in an opened hub scrolls under the hint bar. Fade the last few
+   pixels so the cut reads as "there is more" rather than as a clipping bug.
+   `scroll-timeline`-free: a static mask is enough and costs nothing. */
+.hub__scroll {
+  /* The top fade only exists once something has actually scrolled under the
+     heading. Applying it unconditionally dimmed the first row of every hub —
+     most visibly the Languages row on Skills, which starts right at the
+     boundary. `--hub-top` is 0 at rest and 2rem once scrolled. */
+  --hub-top: 0px;
+  --hub-fade: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--hub-top),
+    #000 calc(100% - 3.5rem),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--hub-fade);
+  mask-image: var(--hub-fade);
+  transition: --hub-top 160ms linear;
+}
+
+@property --hub-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.hub__scroll[data-scrolled="true"] {
+  --hub-top: 2rem;
+}
+
+/* Project image slot: the tile's lighting model, reused. */
+.project-slot {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(0.225 0.006 var(--art-hue, 220)),
+    oklch(0.145 0.004 var(--art-hue, 220))
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--tile-hairline),
+    inset 0 1px 0 var(--tile-lit-edge),
+    inset 0 -1px 0 var(--tile-dark-edge);
+}
+
+.project-slot__mark {
+  color: oklch(
+    var(--instrument-off-l) var(--instrument-off-c) var(--art-hue, 220)
+  );
+  opacity: 0.55;
+}
+
+/* Links inside a hub take that section's instrument colour. A single
+   fixed accent left every link reading as PlayStation blue regardless of
+   the section it sat in — the last element not participating in the
+   instrument system. */
+.hub__link {
+  color: oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220));
+  text-underline-offset: 4px;
+}
+
+.hub__link:hover {
+  text-decoration-line: underline;
+}
+
+/* Thin, unobtrusive scrollbar inside an opened hub. The standard
+   properties cover Firefox; the -webkit- rules below give Chrome and
+   Safari the inset thumb, which `scrollbar-width` alone cannot express. */
+.hub__scroll {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(1 0 0 / 0.16) transparent;
+}
+
+.hub *::-webkit-scrollbar {
+  width: 10px;
+}
+.hub *::-webkit-scrollbar-thumb {
+  background-color: oklch(1 0 0 / 0.16);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+
+/* ============================================================
+   Start-up sequence
+   ============================================================ */
+
+/* The room comes up before the mark does — a light rising, not a fade-in. */
+.boot-screen {
+  position: relative;
+  isolation: isolate;
+}
+
+.boot-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(
+    60% 50% at 14% -8%,
+    oklch(from var(--color-keylight) l c h / 0.6),
+    transparent 72%
+  );
+  animation: boot-room 2100ms var(--ease-out-quart) both;
+}
+
+@keyframes boot-room {
+  0% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.boot-mark {
+  animation: boot-mark-in 1500ms var(--ease-out-expo) both;
+  animation-delay: 260ms;
+}
+
+@keyframes boot-mark-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.14);
+    filter: blur(14px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Lock and profile screens settle in rather than appear. */
+.lock-in {
+  animation: lock-in 520ms var(--ease-out-expo) both;
+}
+
+@keyframes lock-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-screen::before,
+  .boot-mark,
+  .lock-in {
+    animation: boot-fade 150ms linear both;
+  }
+}
+
+/* ============================================================
+   Tiles
+
+   Rewritten to remove what made this read as generated:
+   8 drop-shadows, 10 gradient layers and 7 separate white
+   highlights on a 62px surface, with no agreement about where
+   the light was coming from.
+
+   The rules now:
+     LIGHT    one source, directly above. A lit top edge, a
+              shaded bottom edge. No gloss ellipse, no diagonal
+              sheen, no radial vignettes.
+     SURFACE  a flat face with a single vertical gradient — a
+              machined panel, not glass.
+     DEPTH    one contact shadow. Depth is not glow.
+     BORDER   a hairline, inset. Neutral when idle, tinted to
+              the instrument hue when live.
+     STATE    on/off is a lightness step of the same hue, plus
+              the size change the row already does.
+   ============================================================ */
+
+.tile {
+  position: relative;
+  isolation: isolate;
+  border-radius: 14%;
+  width: var(--tile-off);
+  aspect-ratio: 1 / 1;
+  /* One contact shadow. That is the whole depth model. */
+  box-shadow: 0 2px 6px oklch(0 0 0 / 0.5);
+  transition:
+    width var(--d-focus) var(--ease-out-expo),
+    box-shadow var(--d-focus) var(--ease-out-expo);
+}
+
+.tile--on {
+  width: var(--tile-on);
+  box-shadow: 0 10px 22px -4px oklch(0 0 0 / 0.6);
+}
+
+/* The face: flat, lit from directly above. */
+.tile__face {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(0.225 0.006 var(--art-hue, 220)),
+    oklch(0.145 0.004 var(--art-hue, 220))
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--tile-hairline),
+    inset 0 1px 0 var(--tile-lit-edge),
+    inset 0 -1px 0 var(--tile-dark-edge);
+  transition: box-shadow var(--d-focus) var(--ease-out-expo);
+}
+
+/* Live: the hairline picks up the instrument's own hue and the top edge
+   catches more light. An outer white ring read as a sticker outline; an
+   inset tinted edge reads as the panel being selected. */
+.tile--on .tile__face {
+  box-shadow:
+    inset 0 0 0 1.5px
+      oklch(0.86 calc(var(--instrument-c) * 0.6) var(--art-hue, 220) / 0.9),
+    inset 0 1px 0 oklch(1 0 0 / 0.16),
+    inset 0 -1px 0 var(--tile-dark-edge);
+}
+
+/* The reticle. Off is a dimmer step of the same hue, not a faded copy. */
+.tile__art {
+  color: oklch(
+    var(--instrument-off-l) var(--instrument-off-c) var(--art-hue, 220)
+  );
+  transition:
+    color var(--d-focus) var(--ease-out-expo),
+    filter var(--d-focus) var(--ease-out-expo);
+}
+
+.tile--on .tile__art {
+  color: oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220));
+  /* One glow, and only when live — the instrument is powered. */
+  filter: drop-shadow(
+    0 0 6px
+      oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220) / 0.4)
+  );
+}
+
+.tile:hover .tile__art {
+  color: oklch(
+    calc((var(--instrument-off-l) + var(--instrument-on-l)) / 2)
+      var(--instrument-c) var(--art-hue, 220)
+  );
+}
+
+/* The label under the live tile fades in with it. */
+.tile-label {
+  animation: tile-label-in 260ms var(--ease-out-expo) both;
+}
+
+@keyframes tile-label-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .tile__face,
+  .tile__art {
+    transition-duration: 150ms;
+  }
+
+  .tile-label {
+    animation: boot-fade 150ms linear both;
+  }
+}
+
+/* ============================================================
+   Ambient motion
+
+   Three independent layers moving at different speeds gives parallax:
+   large blobs drift slowly, near particles faster, far particles slower
+   still. Everything is transform and opacity only, so the whole system
+   stays on the compositor.
+   ============================================================ */
+
+.ambient__blobs {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+}
+
+.ambient__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(42px);
+  /* No `will-change`. These animate transform and opacity, which the
+     compositor already handles; the hint only pinned three viewport-sized
+     blurred layers into GPU memory for the entire life of the tab. */
+}
+
+.ambient__blob--a {
+  top: 6%;
+  left: 12%;
+  width: 46%;
+  height: 46%;
+  background: radial-gradient(
+    circle,
+    oklch(0.62 0.14 var(--ambient-hue) / 0.3),
+    transparent 68%
+  );
+  animation:
+    blob-a 68s ease-in-out infinite alternate,
+    blob-pulse 23s ease-in-out infinite alternate;
+}
+
+.ambient__blob--b {
+  top: 42%;
+  left: 54%;
+  width: 54%;
+  height: 54%;
+  background: radial-gradient(
+    circle,
+    oklch(0.54 0.13 calc(var(--ambient-hue) + 34) / 0.26),
+    transparent 70%
+  );
+  animation:
+    blob-b 92s ease-in-out infinite alternate,
+    blob-pulse 31s ease-in-out infinite alternate -8s;
+}
+
+.ambient__blob--c {
+  top: 18%;
+  left: 62%;
+  width: 34%;
+  height: 34%;
+  background: radial-gradient(
+    circle,
+    oklch(0.72 0.08 82 / 0.2),
+    transparent 66%
+  );
+  animation:
+    blob-c 54s ease-in-out infinite alternate,
+    blob-pulse 19s ease-in-out infinite alternate -14s;
+}
+
+@keyframes blob-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(14%, 9%, 0) scale(1.18);
+  }
+}
+
+@keyframes blob-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-16%, -11%, 0) scale(0.94);
+  }
+}
+
+@keyframes blob-c {
+  from {
+    transform: translate3d(0, 0, 0) scale(0.92);
+  }
+  to {
+    transform: translate3d(-9%, 13%, 0) scale(1.16);
+  }
+}
+
+@keyframes blob-pulse {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Motion is atmosphere here, so reduced motion simply stops it. Every layer
+   is still painted — nothing disappears, it just holds still. */
+@media (prefers-reduced-motion: reduce) {
+  .ambient__blob,
+  .ambient__bokeh,
+  .ambient__bokeh--far,
+  .ambient__field {
+    animation: none !important;
+  }
+
+  /* The bloom is a flourish with no state in it, so it is removed rather
+     than shortened. Pan and tint still travel, just briefly: those carry
+     which section is selected, which is information, not decoration. */
+  .ambient__bloom {
+    animation: none !important;
+  }
+}
+
+
+/* ============================================================
+   Key art
+
+   The focused section's mark, blown up behind the interface. Tinted to
+   the live ambient hue so it belongs to the room rather than sitting on
+   top of it, and held far below text contrast thresholds.
+   ============================================================ */
+
+.hero-art {
+  /* Lit in the focused section's instrument colour, so the blown-up display
+     and the focused tile read as the same instrument. */
+  color: oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220));
+  opacity: 0.16;
+  /* A touch of blur so it reads as art thrown out of focus behind the
+     interface, rather than a scaled-up icon sitting flat on the page. */
+  filter: blur(1.5px)
+    drop-shadow(
+      0 0 70px oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220) / 0.3)
+    );
+  animation: hero-art-in 620ms var(--ease-out-expo) both;
+}
+
+/* No fill/stroke overrides here: the reticles declare their own, and forcing
+   `fill: currentColor` onto them would fill every arc solid. */
+
+@keyframes hero-art-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 0.16;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-art {
+    animation: none;
+    opacity: 0.16;
+  }
+}
+
+/* ============================================================
+   Project viewer
+
+   A walkable stand-in for a project that cannot be linked. The
+   frame borrows the tile's lighting so it belongs to the same
+   world as the rest of the console.
+   ============================================================ */
+
+.project-viewer {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(0.225 0.006 var(--art-hue, 220)),
+    oklch(0.155 0.004 var(--art-hue, 220))
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--tile-hairline),
+    inset 0 1px 0 var(--tile-lit-edge),
+    0 10px 24px -8px oklch(0 0 0 / 0.55);
+}
+
+/* The live section, in that project's instrument colour. */
+.viewer-nav--on {
+  color: oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220));
+}
+
+/* Capture visibility is purely declarative — no transition, no animation.
+
+   Both were tried and both are wrong here. An effect overrides the base
+   value for as long as it is running, so a stalled or throttled clock
+   leaves the active capture invisible; that is content gated behind
+   motion. A screenshot viewer should swap the way real navigation does:
+   instantly. */
+.viewer-shot {
+  opacity: 0;
+}
+
+.viewer-shot--on {
+  opacity: 1;
+  z-index: 1;
+}
+
+.viewer-caption {
+  animation: viewer-caption-in 260ms var(--ease-out-expo) both;
+}
+
+@keyframes viewer-caption-in {
+  from {
+    transform: translateY(5px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer-caption {
+    animation: none;
+  }
+}
+
+/* A library card. Same lighting model as the home-row tiles, so opening a
+   project reads as the same gesture as opening an app. */
+.project-card {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(0.225 0.006 var(--art-hue, 220)),
+    oklch(0.17 0.004 var(--art-hue, 220))
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--tile-hairline),
+    inset 0 1px 0 var(--tile-lit-edge),
+    0 2px 6px oklch(0 0 0 / 0.4);
+  transition:
+    box-shadow var(--d-focus) var(--ease-out-expo),
+    transform var(--d-focus) var(--ease-out-expo);
+}
+
+.project-card:hover,
+.project-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1.5px
+      oklch(0.86 calc(var(--instrument-c) * 0.6) var(--art-hue, 220) / 0.85),
+    inset 0 1px 0 oklch(1 0 0 / 0.16),
+    0 12px 24px -6px oklch(0 0 0 / 0.55);
+}
+
+/* The cover sits on its own dark ground so a light screenshot does not
+   bleed into the card body. */
+.project-card__cover {
+  background-color: oklch(0.12 0.004 var(--art-hue, 220));
+  box-shadow: inset 0 -1px 0 var(--tile-hairline);
+}
+
+.project-card__mark {
+  color: oklch(
+    var(--instrument-off-l) var(--instrument-off-c) var(--art-hue, 220)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-card {
+    transition-duration: 150ms;
+  }
+
+  .project-card:hover,
+  .project-card:focus-visible {
+    transform: none;
+  }
+}
+
+/* Secondary links in About: outlined rather than filled, so the résumé
+   download stays the one obvious primary action in the row. */
+.about-link {
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+  transition:
+    color var(--d-focus) var(--ease-out-expo),
+    box-shadow var(--d-focus) var(--ease-out-expo);
+}
+
+.about-link:hover,
+.about-link:focus-visible {
+  color: var(--color-ink);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-link {
+    transition-duration: 150ms;
+  }
+}
+
+/* The About portrait. Same lighting model as the tiles, so a photograph
+   sits in the console rather than on top of it. */
+.portrait {
+  box-shadow:
+    inset 0 0 0 1px var(--tile-hairline),
+    inset 0 1px 0 var(--tile-lit-edge),
+    0 10px 24px -8px oklch(0 0 0 / 0.55);
+}
+
+/* ============================================================
+   Contact form
+
+   Inputs use the same lighting model as everything else — a lit top
+   edge, a hairline, a dark ground — so a form reads as part of the
+   console rather than as a browser default dropped into it.
+   ============================================================ */
+
+.contact-form {
+  background-image: linear-gradient(
+    to bottom,
+    oklch(0.225 0.006 var(--art-hue, 220)),
+    oklch(0.17 0.004 var(--art-hue, 220))
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--tile-hairline),
+    inset 0 1px 0 var(--tile-lit-edge);
+}
+
+.field {
+  /* 44px floor: the padding alone landed these at 43px, a pixel under the
+     touch-target minimum. */
+  min-height: 2.75rem;
+  background-color: oklch(0.13 0.004 var(--art-hue, 220));
+  box-shadow: inset 0 0 0 1px var(--hairline-strong);
+  transition: box-shadow var(--d-focus) var(--ease-out-expo);
+  appearance: none;
+}
+
+.field::placeholder {
+  /* Placeholders carry the same 4.5:1 floor as body text — the muted-grey
+     default is the most common contrast failure in a form. */
+  color: var(--color-ink-faint);
+}
+
+.field:hover {
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.28);
+}
+
+.field:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px
+      oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220)),
+    0 0 0 3px
+      oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220) / 0.25);
+}
+
+.field[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 1px oklch(0.62 0.16 28);
+}
+
+.field[aria-invalid="true"]:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px oklch(0.7 0.17 28),
+    0 0 0 3px oklch(0.7 0.17 28 / 0.25);
+}
+
+/* The native select arrow is a light-mode grey triangle; draw our own. */
+select.field {
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-ink-muted) 50%),
+    linear-gradient(135deg, var(--color-ink-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% + 1px),
+    calc(100% - 13px) calc(50% + 1px);
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem;
+}
+
+select.field option {
+  background-color: oklch(0.17 0.004 var(--art-hue, 220));
+  color: var(--color-ink);
+}
+
+textarea.field {
+  resize: vertical;
+  min-height: 7rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field {
+    transition-duration: 150ms;
+  }
+}
+
+
+/* ============================================================
+   Idle
+
+   The ambient system is six layers on infinite alternate loops, the
+   longest running 104s. That is fine while someone is looking at it and
+   pure waste while the tab sits in the background, which for a portfolio
+   link is most of its life. Paused, not removed: every layer still
+   paints, so the room is identical the moment the tab comes back.
+   ============================================================ */
+
+[data-idle] .ambient__field,
+[data-idle] .ambient__bokeh,
+[data-idle] .ambient__blob,
+[data-idle] .ambient__bloom {
+  animation-play-state: paused;
+}
+
+/* ============================================================
+   Short viewports
+
+   Landscape phones, and — the case that actually matters — any laptop at
+   200% browser zoom, which turns 1440x812 into 720x406 CSS pixels.
+
+   The home screen never scrolls, so at these heights the status bar, the
+   row, the title block and the hint bar are sharing a budget that is
+   genuinely too small at full size. Previously the row was a shrinkable
+   flex item, so it collapsed and the focused tile's label ended up
+   underneath the h1. Now the row holds its height (shrink-0) and the
+   whole composition steps down together instead.
+   ============================================================ */
+
+@media (max-height: 620px) {
+  :root {
+    --tile-on: clamp(4.25rem, 15vh, 6.5rem);
+    --tile-off: clamp(2.6rem, 9vh, 4rem);
+    --tile-row-pb: 2.25rem;
+    --text-h1: clamp(1.5rem, 1.1rem + 2vw, 2.25rem);
+  }
+}
+
+/* ============================================================
+   Chips
+
+   One treatment for the tag-shaped element. It had shipped as four:
+   rounded-full pills in Skills, 4px corners in About's coursework and in
+   the project detail, 2px corners inside the library card. Same concept,
+   four looks, and the pills contradicted the radius rule in theme.css.
+
+   Not interactive, so deliberately no hover state: Skills chips used to
+   light up on hover and do nothing, which reads as a filter that is
+   broken rather than as a label.
+   ============================================================ */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  padding: 0.25rem 0.625rem;
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  color: var(--color-ink-muted);
+}
+
+/* Supporting detail inside a library card rather than the content itself. */
+.chip--compact {
+  padding: 0.125rem 0.5rem;
+  color: var(--color-ink-faint);
+}
+
+/* The cover art each project card leads with.
+
+   The captures do not share a visual weight: one is a dense dark
+   dashboard, one a bright colourful app, one has no UI at all. Framing is
+   per-project (--cover-zoom / --cover-origin) because scaling a 1792px
+   dashboard down to a 340px card renders it unreadable, and a shared
+   bottom scrim grounds all three into the card the same way. */
+.project-card__cover img {
+  /* One anchor for both operations. object-fit crops first and the zoom
+     scales second; pointing them at different corners is what sliced the
+     Engineering OS sidebar through the middle of its own labels. */
+  object-position: var(--cover-origin, top);
+  transform: scale(var(--cover-zoom, 1));
+  transform-origin: var(--cover-origin, top);
+}
+
+.project-card__cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to bottom,
+    transparent 55%,
+    oklch(0.12 0.004 var(--art-hue, 220) / 0.55) 100%
+  );
 }

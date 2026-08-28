@@ -1,0 +1,168 @@
+/* ============================================================
+   Design tokens
+   PS5 system UI translated to web. All color in OKLCH.
+   ============================================================ */
+
+@theme {
+  /* --- Surfaces: the dark chassis -------------------------
+     Chroma stays under 0.012 on every surface. The moment
+     surfaces get saturated this reads as the generic dark
+     dev-portfolio template. Color comes from the ambient
+     layer, not from the chassis.                            */
+  --color-void: oklch(0.145 0.003 75);
+  --color-chassis: oklch(0.2 0.004 75);
+  --color-surface: oklch(0.245 0.005 75);
+  /* The translucent panel the hubs sit on. It existed only as a hard-coded
+     value in three components — and at the pre-charcoal hue 265, so those
+     panels were the last blue-tinted surfaces on the site. */
+  --color-panel: oklch(0.245 0.005 75 / 0.55);
+  --color-raised: oklch(0.3 0.006 75);
+  --color-raised-hi: oklch(0.36 0.007 75);
+  /* The selection ring. White is the console's real accent, so this is a
+     named role rather than an incidental value. */
+  --color-ring: oklch(1 0 0 / 0.92);
+
+  /* --- Key light ------------------------------------------
+     The lamp above and to the left of the console, which the
+     ambient field and the boot screen both spill from. It was
+     referenced by both and defined by neither, so every
+     gradient in `.ambient__field` failed var() substitution and
+     the whole layer computed to `background-image: none`.
+
+     Warm rather than neutral (hue 80, matching the bounce
+     directly beneath it) and held at L 0.62: bright enough to
+     model the room, dim enough that the scrim can still keep
+     the effective background under ~L 0.28 where type sits. */
+  --color-keylight: oklch(0.62 0.038 80);
+
+  /* --- Instrument colour ------------------------------------
+     A palette with a rule, not five hues picked off the wheel.
+
+     TEMPERATURE ENCODES INTENT. The four sections you READ sit in
+     a tight analogous cool band that steps 24° across the row —
+     268 → 244 → 220 → 196 — so the row reads as one deliberate
+     progression. Contact, the only section you ACT on, is the
+     single warm outlier at 42. That is why the CTA tile stands
+     out: not decoration, a rule.
+
+     Chroma is 0.09, not the 0.13 it was. Above ~0.10 on a
+     near-black face these stop reading as anodised markings and
+     start reading as neon.
+
+     ON/OFF are two lightness steps of the same hue, so an
+     unfocused tile reads as an instrument that is unpowered
+     rather than one that has been faded out.                  */
+  --instrument-c: 0.09;
+  --instrument-on-l: 0.8;
+  --instrument-off-l: 0.6;
+  --instrument-off-c: 0.05;
+
+  /* --- Tile lighting ---------------------------------------
+     ONE light source, directly above. One highlight on the top
+     edge, one shade on the bottom. The previous treatment had
+     seven implied light positions — a 142° bevel, a 122° sheen,
+     a radial gloss and four radial gradients — which is what
+     made the highlights look scattered.                      */
+  --tile-lit-edge: oklch(1 0 0 / 0.1);
+  --tile-dark-edge: oklch(0 0 0 / 0.55);
+  --tile-hairline: oklch(1 0 0 / 0.07);
+
+  /* --- Ink -----------------------------------------------
+     Re-measured in-browser by compositing every painted layer
+     (field, three blobs, both scrim washes) into a canvas and
+     sampling it, after --color-keylight was defined and the
+     ambient field started painting again.
+
+     Worst backdrop ANYWHERE on the page, rgb(44,64,84), which
+     falls in the lower-right where the hero art sits and no
+     text ever does:
+       ink        10.0:1
+       ink-muted   6.0:1
+       ink-faint   4.3:1
+     Tightest ratio under text that actually exists, across all
+     five sections and both the home screen and the open hubs:
+       5.1:1  the status-bar affiliation, 13px ink-faint
+     and that figure excludes the status bar's own scrim, so the
+     real value is higher again. ink-faint is the floor; nothing
+     goes dimmer, and nothing dim belongs in the lower-right.
+     Against the flat chassis these rise to 19:1 / 11:1 / 7:1. */
+  --color-ink: oklch(0.985 0 0);
+  --color-ink-muted: oklch(0.82 0.004 75);
+  --color-ink-faint: oklch(0.72 0.005 75);
+
+  /* --- Selection ------------------------------------------
+     The one place a fixed accent still makes sense: text
+     selection is chrome, not content, so it should not shift
+     with whichever section happens to be open.              */
+  --color-ps: oklch(0.54 0.17 252);
+
+  /* --- Type ----------------------------------------------- */
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+
+  --text-h1: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.02em;
+
+  --text-h2: clamp(1.5rem, 1.2rem + 1.4vw, 2.25rem);
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.015em;
+
+  --text-h3: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.01em;
+
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.65; /* light-on-dark needs the extra room */
+
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.55;
+
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.4;
+  /* --- Radius ---------------------------------------------
+     Restrained relative to element size. Big soft 24px rounding
+     is a modern-web habit, not a console one. Tiles set their
+     own percentage radius so it scales with the tile.        */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* --- Motion --------------------------------------------- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+:root {
+  /* Spacing rhythm */
+  --gutter: clamp(1.25rem, 0.5rem + 3vw, 3rem);
+  --measure: 68ch;
+
+  /* Tile geometry. Tokens rather than inline styles specifically so the
+     short-viewport query in globals.css can shrink the row; as inline
+     widths they were unreachable from CSS and the focused tile's label
+     slid underneath the h1 whenever the screen got short. */
+  --tile-on: clamp(6.75rem, 11vw, 9.75rem);
+  --tile-off: clamp(3.9rem, 6.4vw, 5.65rem);
+  --tile-row-pb: 3.5rem;
+
+  /* Hairline + elevation */
+  --hairline: oklch(1 0 0 / 0.1);
+  --hairline-strong: oklch(1 0 0 / 0.18);
+  --e-focus:
+    0 0 0 2px oklch(1 0 0 / 0.85), 0 12px 40px -8px oklch(0 0 0 / 0.6);
+
+  /* Motion durations */
+  --d-focus: 220ms;
+  --d-ui: 320ms;
+  --d-ambient: 700ms;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Semantic z-scale — never an arbitrary 9999 */
+  --z-ambient: 0;
+  --z-content: 10;
+  --z-toast: 300;
+
+  /* Ambient layer, driven at runtime by useAmbient() */
+  --ambient-hue: 252;
+}
