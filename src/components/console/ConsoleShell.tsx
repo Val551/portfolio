@@ -61,10 +61,28 @@ export function ConsoleShell() {
 
   const restoreFocus = useRef(false);
 
+  // Coming back is its own moment, not the absence of one. Bumping this key
+  // replays the home screen's entrance; `returning` drives the row's stagger
+  // for as long as it runs. Without either, closing a hub cross-faded a
+  // static screenshot back in: nothing moved, nothing re-lit.
+  const [returnKey, setReturnKey] = useState(0);
+  const [returning, setReturning] = useState(false);
+
   const close = useCallback(() => {
     setOpenId(null);
     restoreFocus.current = true;
+    setReturnKey((k) => k + 1);
+    setReturning(true);
   }, []);
+
+  // Cleared on a timer rather than animationend: five staggered animations
+  // run, and which one finishes last is not something any single element
+  // knows.
+  useEffect(() => {
+    if (!returning) return;
+    const timer = window.setTimeout(() => setReturning(false), 760);
+    return () => window.clearTimeout(timer);
+  }, [returning]);
 
   // Return focus to the tile the reader came from, once the home screen is
   // back in the DOM. Done in an effect rather than requestAnimationFrame:
@@ -150,10 +168,15 @@ export function ConsoleShell() {
           // the tab order, the a11y tree and hit testing in one attribute,
           // which is also what makes the hub's aria-modal claim honest.
           inert={openApp ? true : undefined}
+          data-returning={returning || undefined}
+          // Expo, like every other curve in this project. Tailwind's default
+          // `ease` was front-loaded here: 89% of the fade landed in the first
+          // 150ms of a 320ms transition, which is what made coming back read
+          // as a snap rather than a settle.
           className={
             openApp
-              ? "absolute inset-0 opacity-0 transition-opacity duration-[var(--d-ui)]"
-              : "absolute inset-0 flex flex-col opacity-100 transition-opacity duration-[var(--d-ui)]"
+              ? "absolute inset-0 opacity-0 transition-opacity duration-[var(--d-ui)] ease-[var(--ease-out-expo)]"
+              : "absolute inset-0 flex flex-col opacity-100 transition-opacity duration-[var(--d-ui)] ease-[var(--ease-out-expo)]"
           }
         >
           {/* Key art. The console fills this space with the focused game's
@@ -166,7 +189,7 @@ export function ConsoleShell() {
             className="pointer-events-none absolute inset-y-0 right-[-6%] hidden w-[62%] items-center justify-center md:flex"
           >
             <HeroArt
-              key={`${app.id}-hero`}
+              key={`${app.id}-hero-${returnKey}`}
               className="hero-art h-[62vh] w-auto"
               style={{ "--art-hue": app.art } as CSSProperties}
             />
@@ -185,7 +208,7 @@ export function ConsoleShell() {
           {/* And the title block sits low and left, over the room, with one
               primary action — the console's "Play Game" slot. */}
           <div className="mt-auto px-[var(--gutter)] pb-[clamp(1rem,4vh,2.5rem)]">
-            <h1 key={app.id} className="hub-title text-h1">
+            <h1 key={`${app.id}-${returnKey}`} className="hub-title text-h1">
               {app.label}
             </h1>
             {/* Always rendered, even for the one app with no blurb: every
@@ -199,7 +222,7 @@ export function ConsoleShell() {
                 announcements in about a second. As a description it is read
                 once, when the tile it belongs to takes focus. */}
             <p
-              key={`${app.id}-blurb`}
+              key={`${app.id}-blurb-${returnKey}`}
               id="app-blurb"
               className={`hub-title max-w-[46ch] text-small text-ink-muted${
                 app.blurb ? " mt-3" : ""
@@ -209,7 +232,7 @@ export function ConsoleShell() {
             </p>
 
             <div
-              key={`${app.id}-action`}
+              key={`${app.id}-action-${returnKey}`}
               className="hub-title mt-6 flex flex-wrap items-center gap-4"
             >
               <button

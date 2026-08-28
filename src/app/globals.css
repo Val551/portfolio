@@ -426,7 +426,11 @@ p {
 
 @keyframes hub-title-in {
   from {
-    opacity: 0;
+    /* 0.35, not 0. An animation that starts fully transparent and fills
+       `both` leaves the element invisible for as long as the browser pauses
+       it, which is what stranded content here twice before. Starting from a
+       visible value means the worst a stall can do is look dim. */
+    opacity: 0.35;
     transform: translateY(10px);
   }
   to {
@@ -441,7 +445,7 @@ p {
 
 @keyframes hub-in {
   from {
-    opacity: 0;
+    opacity: 0.35;
     transform: translateY(16px);
   }
   to {
@@ -717,7 +721,7 @@ p {
 
 @keyframes tile-label-in {
   from {
-    opacity: 0;
+    opacity: 0.35;
     transform: translateY(-4px);
   }
   to {
@@ -889,7 +893,7 @@ p {
 
 @keyframes hero-art-in {
   from {
-    opacity: 0;
+    opacity: 0.05;
     transform: scale(0.94);
   }
   to {
@@ -1336,4 +1340,69 @@ textarea.field {
 
 [data-idle] .ambient__figure {
   animation-play-state: paused;
+}
+
+
+/* ============================================================
+   Returning from a hub
+
+   Closing a section used to cross-fade a static screenshot back in. Nothing
+   moved: the tiles held their width, the reticles held their colour, the key
+   art held its opacity, and the whole screen resolved on Tailwind's default
+   `ease` with 89% of the fade landing in the first 150ms of 320ms. Arriving
+   at the home screen played a real entrance; coming back played none of it,
+   which is exactly why it read as a snap.
+
+   The row now settles left to right, and each reticle comes up just behind
+   its own housing, so the instruments read as powering back on rather than
+   being switched on. The stagger is 42ms a tile: five tiles, 168ms of spread,
+   short enough to feel like one gesture.
+
+   `backwards`, never `both`. During the delay the from-state applies, and
+   once the animation ends the element reverts to its own resting style
+   instead of being pinned to a keyframe. Nothing here can strand.
+   ============================================================ */
+
+[data-returning] .tile {
+  animation: tile-return 440ms var(--ease-out-expo) calc(var(--i, 0) * 42ms)
+    backwards;
+}
+
+@keyframes tile-return {
+  from {
+    opacity: 0.5;
+    scale: 0.93;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* The reticle follows its housing by a beat, which is the difference between
+   a tile appearing and an instrument coming online. */
+[data-returning] .tile__art {
+  animation: art-return 500ms var(--ease-out-expo)
+    calc(var(--i, 0) * 42ms + 70ms) backwards;
+}
+
+@keyframes art-return {
+  from {
+    opacity: 0.25;
+    scale: 0.88;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The stagger is the whole effect, so it goes rather than being compressed
+     into something that reads as a stutter. The parent's crossfade still
+     carries the change of screen. */
+  [data-returning] .tile,
+  [data-returning] .tile__art {
+    animation: none !important;
+  }
 }

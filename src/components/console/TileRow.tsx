@@ -97,7 +97,9 @@ export function TileRow({
                 // Size lives in CSS (--tile-on / --tile-off) so a height
                 // media query can shrink the row. --tile-hue used to be set
                 // here and read nowhere.
-                style={{ "--art-hue": app.art } as CSSProperties}
+                // --i is the tile's place in the row; the return
+                // choreography uses it to stagger the row left to right.
+                style={{ "--art-hue": app.art, "--i": i } as CSSProperties}
               >
                 {/* Face and lighting are entirely in CSS now — one
                     gradient, one lit edge, one shade. The inline stack of
