@@ -152,11 +152,21 @@
 
   /* Motion durations */
   --d-focus: 220ms;
+  /* Lights go out slower than they come on, and on a different curve.
+     --ease-out-expo is ~80% complete at 20% of its duration: perfect for
+     something arriving, disastrous for something leaving, because the glow
+     was 80% gone in 44ms of a 220ms transition. That is why switching tiles
+     read as the lights being deleted rather than dimmed. */
+  --d-dim: 460ms;
   --d-ui: 320ms;
   --d-ambient: 700ms;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  /* Decay, not deceleration. Holds briefly, then releases: an element
+     cooling rather than a value racing to zero. The only curve here that is
+     deliberately not front-loaded. */
+  --ease-dim: cubic-bezier(0.4, 0.02, 0.5, 1);
 
   /* Semantic z-scale — never an arbitrary 9999 */
   --z-ambient: 0;

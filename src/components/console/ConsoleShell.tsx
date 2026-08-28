@@ -8,6 +8,7 @@ import {
   type CSSProperties,
 } from "react";
 import { apps } from "@/content/apps";
+import { cn } from "@/lib/cn";
 import { useAmbient } from "@/hooks/useAmbient";
 import { StatusBar } from "./StatusBar";
 import { TileRow } from "./TileRow";
@@ -33,7 +34,6 @@ export function ConsoleShell() {
 
   const app = apps[focused];
   const openApp = openId ? (apps.find((a) => a.id === openId) ?? null) : null;
-  const HeroArt = TILE_ART[app.id];
 
 
   // The focused tile paints the whole screen, exactly as a console derives
@@ -186,13 +186,25 @@ export function ConsoleShell() {
               and clear of the lower-left column where the type lives. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-[-6%] hidden w-[62%] items-center justify-center md:flex"
+            className="pointer-events-none absolute inset-y-0 right-[-6%] hidden w-[62%] place-items-center md:grid"
           >
-            <HeroArt
-              key={`${app.id}-hero-${returnKey}`}
-              className="hero-art h-[62vh] w-auto"
-              style={{ "--art-hue": app.art } as CSSProperties}
-            />
+            {/* All five stay mounted and crossfade. Keying a single element
+                to the focused app deleted the outgoing artwork on the frame
+                the new one began fading in, so the largest light on the
+                screen vanished instantly every time the selection moved. */}
+            {apps.map((entry) => {
+              const Art = TILE_ART[entry.id];
+              return (
+                <Art
+                  key={entry.id}
+                  className={cn(
+                    "hero-art h-[62vh] w-auto [grid-area:1/1]",
+                    entry.id === app.id && "hero-art--on",
+                  )}
+                  style={{ "--art-hue": entry.art } as CSSProperties}
+                />
+              );
+            })}
           </div>
 
           {/* The row sits at the top under the status bar, left-aligned, the

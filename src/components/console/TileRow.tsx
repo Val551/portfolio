@@ -115,15 +115,18 @@ export function TileRow({
                 <span className="sr-only">{app.label}</span>
               </button>
 
-              {/* The label drops beneath the focused tile, as on the console. */}
-              {isFocused ? (
-                <span
-                  aria-hidden="true"
-                  className="tile-label absolute top-full left-0 mt-3 whitespace-nowrap text-small font-medium text-ink"
-                >
-                  {app.label}
-                </span>
-              ) : null}
+              {/* Always rendered, never mounted on demand. Conditional
+                  rendering gave the label an entrance and no exit: the one
+                  you moved away from was deleted mid-frame while the tile it
+                  belonged to was still dimming. Absolutely positioned, so the
+                  four invisible ones cost no layout. */}
+              <span
+                aria-hidden="true"
+                data-on={isFocused || undefined}
+                className="tile-label absolute top-full left-0 mt-3 whitespace-nowrap text-small font-medium text-ink"
+              >
+                {app.label}
+              </span>
             </li>
           );
         })}
