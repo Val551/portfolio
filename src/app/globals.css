@@ -875,15 +875,16 @@ p {
    ============================================================ */
 
 .hero-art {
-  /* Lit in the focused section's instrument colour, so the blown-up display
-     and the focused tile read as the same instrument. */
-  color: oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220));
-  opacity: 0.16;
+  /* Near-white at low chroma, not the tile's instrument colour. See the key
+     art block in theme.css: the room is tinted by the same section, so hue
+     alone could not separate the artwork from its own background. */
+  color: oklch(var(--hero-l) var(--hero-c) var(--art-hue, 220));
+  opacity: var(--hero-opacity);
   /* A touch of blur so it reads as art thrown out of focus behind the
      interface, rather than a scaled-up icon sitting flat on the page. */
   filter: blur(1.5px)
     drop-shadow(
-      0 0 70px oklch(var(--instrument-on-l) var(--instrument-c) var(--art-hue, 220) / 0.3)
+      0 0 70px oklch(var(--hero-l) var(--hero-c) var(--art-hue, 220) / 0.14)
     );
   animation: hero-art-in 620ms var(--ease-out-expo) both;
 }
@@ -897,7 +898,7 @@ p {
     transform: scale(0.94);
   }
   to {
-    opacity: 0.16;
+    opacity: var(--hero-opacity);
     transform: none;
   }
 }
@@ -905,7 +906,7 @@ p {
 @media (prefers-reduced-motion: reduce) {
   .hero-art {
     animation: none;
-    opacity: 0.16;
+    opacity: var(--hero-opacity);
   }
 }
 

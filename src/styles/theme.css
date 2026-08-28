@@ -53,6 +53,30 @@
      unfocused tile reads as an instrument that is unpowered
      rather than one that has been faded out.                  */
   --instrument-c: 0.09;
+
+  /* --- Key art -------------------------------------------------------
+     The blown-up mark behind the interface is the same instrument seen at
+     distance and out of focus, so it deliberately does NOT reuse the
+     tile's on-state values.
+
+     It has to separate from the room on LIGHTNESS rather than on hue,
+     because the room is tinted by the section and three of the five have
+     an art hue within 25 degrees of their own room hue:
+
+       experience  room 292  art 268   24 degrees apart
+       projects    room 234  art 244   10
+       skills      room 212  art 220    8
+       about       room 268  art 196   72
+       contact     room 252  art  42  150
+
+     At the tile's own 0.8 lightness those first three resolved to a
+     violet-grey smudge on a violet-grey room. Near-white at low chroma
+     reads as light instead of as colour, which works against any hue the
+     room happens to be, and the tile beside it still carries the
+     section's colour at full strength. */
+  --hero-l: 0.97;
+  --hero-c: 0.065;
+  --hero-opacity: 0.26;
   --instrument-on-l: 0.8;
   --instrument-off-l: 0.6;
   --instrument-off-c: 0.05;
