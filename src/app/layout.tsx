@@ -25,14 +25,60 @@ const hanken = Hanken_Grotesk({
   weight: ["300", "400", "500", "600"],
 });
 
+/**
+ * The origin this site is served from.
+ *
+ * Link previews need ABSOLUTE image URLs. LinkedIn, Slack and iMessage all
+ * ignore a relative `/og.jpg` outright, so Next has to know the origin at
+ * build time in order to resolve it. `metadataBase` is what supplies it.
+ *
+ * Read from the environment rather than hardcoded: Vercel sets
+ * VERCEL_PROJECT_PRODUCTION_URL to the project's production domain, and keeps
+ * it pointed at a custom domain once one is attached. So this stays correct
+ * through a domain change without anyone remembering to edit it.
+ * NEXT_PUBLIC_SITE_URL overrides it for any other host.
+ */
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
+const TITLE = `${profile.name}, ${profile.affiliation}`;
+const DESCRIPTION = `Portfolio of ${profile.name}, ${profile.degree} at ${profile.school}, graduating ${profile.graduation}.`;
+
+/** The card image is a capture of the home screen at exactly 1200x630. */
+const OG_IMAGE = {
+  url: "/og.jpg",
+  width: 1200,
+  height: 630,
+  alt: `The ${profile.name} portfolio home screen, laid out as a console menu with tiles for experience, projects, skills, about and contact.`,
+};
+
 export const metadata: Metadata = {
-  title: `${profile.name}, ${profile.affiliation}`,
-  description: `Portfolio of ${profile.name}, ${profile.degree} at ${profile.school}, graduating ${profile.graduation}.`,
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
   authors: [{ name: profile.name }],
+  alternates: { canonical: "/" },
   openGraph: {
-    title: `${profile.name}, Electrical & Computer Engineering`,
-    description: `Portfolio of ${profile.name}, ${profile.degree} at ${profile.school}.`,
-    type: "profile",
+    // `website` rather than `profile`: LinkedIn renders it most predictably,
+    // and `profile` expects first/last name properties this page has no use
+    // for.
+    type: "website",
+    url: "/",
+    siteName: TITLE,
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    // summary_large_image is the full-width card. Plain `summary` renders a
+    // small square thumbnail, which wastes a 1200x630 capture.
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [OG_IMAGE],
   },
 };
 
