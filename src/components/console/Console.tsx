@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { BootScreen } from "./BootScreen";
 import { LockScreen } from "./LockScreen";
 import { ProfileScreen } from "./ProfileScreen";
 import { ConsoleShell } from "./ConsoleShell";
-
-type Stage = "boot" | "lock" | "profile" | "home";
+import { useAmbient } from "@/hooks/useAmbient";
 
 /**
  * The start-up flow: power on, unlock, pick a user, land on the home menu.
@@ -17,13 +16,16 @@ type Stage = "boot" | "lock" | "profile" | "home";
  * its own dwell to a beat. The sequence is atmosphere, not content.
  */
 export function Console() {
-  const [stage, setStage] = useState<Stage>("boot");
+  // Stage lives in the ambient context because the room needs it too: the
+  // background is what carries the figure during unlock, and mirroring this
+  // one value into it with an effect would be a cascading render for nothing.
+  const { stage, setStage } = useAmbient();
 
+  // Computed from the current stage rather than a functional update: the
+  // room owns this state now and exposes a plain setter.
   const advance = useCallback(() => {
-    setStage((current) =>
-      current === "boot" ? "lock" : current === "lock" ? "profile" : current,
-    );
-  }, []);
+    setStage(stage === "boot" ? "lock" : stage === "lock" ? "profile" : stage);
+  }, [stage, setStage]);
 
   // Any key advances the pre-home stages. Once home, ConsoleShell owns the
   // keyboard, so this listener steps out of the way entirely.
@@ -47,7 +49,7 @@ export function Console() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [advance, stage]);
+  }, [advance, setStage, stage]);
 
   if (stage === "boot") {
     return (

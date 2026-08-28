@@ -13,8 +13,6 @@ import { StatusBar } from "./StatusBar";
 import { TileRow } from "./TileRow";
 import { HintBar } from "./HintBar";
 import { SectionView } from "./SectionView";
-import { Screensaver } from "./Screensaver";
-import { useIdle } from "@/hooks/useIdle";
 import { TILE_ART } from "./tileArt";
 
 /**
@@ -37,11 +35,6 @@ export function ConsoleShell() {
   const openApp = openId ? (apps.find((a) => a.id === openId) ?? null) : null;
   const HeroArt = TILE_ART[app.id];
 
-  // Reading a hub produces no input events, and covering something someone is
-  // reading is the one way a screensaver becomes a bug — so the home screen
-  // gates it, rather than the hook.
-  const idle = useIdle(45_000);
-  const screensaver = idle && !openApp;
 
   // The focused tile paints the whole screen, exactly as a console derives
   // its background from whatever is highlighted. `pan` is the tile's
@@ -237,8 +230,6 @@ export function ConsoleShell() {
       </div>
 
       <HintBar open={Boolean(openApp)} />
-
-      {screensaver ? <Screensaver /> : null}
     </div>
   );
 }

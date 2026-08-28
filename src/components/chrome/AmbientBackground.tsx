@@ -18,11 +18,13 @@ import type { CSSProperties } from "react";
  *   BLOOM   light swells once behind the key art as the selection lands.
  *   TINT    the hue crossfades on an expo curve rather than linearly.
  *   RECEDE  opening a hub drops the whole room back behind the content.
+ *   FIGURE  a shape at depth while the console is being unlocked, gone by
+ *           the time the menu arrives.
  *
  * Rendered once at the root. Purely decorative, so hidden from AT.
  */
 export function AmbientBackground() {
-  const { hue, pan, mark, recessed } = useAmbient();
+  const { hue, pan, mark, recessed, stage } = useAmbient();
 
   // Six layers loop forever, the longest over 104s. Backgrounded, that is
   // pure battery cost, and a portfolio link spends most of its life in a tab
@@ -45,6 +47,7 @@ export function AmbientBackground() {
       className="ambient"
       aria-hidden="true"
       data-recessed={recessed || undefined}
+      data-stage={stage}
       style={{ "--ambient-hue": hue, "--ambient-pan": pan } as CSSProperties}
     >
       <div className="ambient__field" />
@@ -58,6 +61,11 @@ export function AmbientBackground() {
           must fire on every change, from an element whose resting state is
           invisible either way. */}
       <div key={mark} className="ambient__bloom" />
+      {/* Sits HERE, between the blobs and the near bokeh, and the position in
+          this list is the effect. Particles drift in front of it, the scrim
+          and the grain paint over it. That is what makes it read as something
+          at a depth in the room rather than a picture laid on top of one. */}
+      <div className="ambient__figure" />
       <div className="ambient__bokeh ambient__bokeh--far" />
       <div className="ambient__bokeh" />
       <div className="ambient__scrim" />

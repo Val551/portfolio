@@ -1233,106 +1233,107 @@ textarea.field {
 
 
 /* ============================================================
-   Personality
+   The figure
 
-   White ink on pure black, so `mix-blend-mode: screen` drops the black
-   entirely and leaves the linework floating in the room. That is why the
-   source needs no alpha channel and no cutout.
+   Not an image placed on the background. A layer OF it.
 
-   Two placements, one asset:
-     PROFILE      the user-select screen, where a console keeps the one
-                  surface that belongs to you rather than to the system.
-     SCREENSAVER  what a console does when you walk away from it.
+   The first pass put the artwork on a screen — an <img> in a component,
+   fading in, drifting. It read as a sticker because everything around it
+   obeyed an optical model it was not part of. This one joins the model:
 
-   NOTHING HERE FADES IN FROM ZERO. Both of these first shipped with an
-   opacity entrance and both were invisible the moment the tab was
-   backgrounded: the browser pauses the animation, the fill holds frame 0,
-   and the element sits at opacity 0 — the screensaver becoming a fully
-   transparent layer that still swallowed the first click. Every resting
-   state below is a visible one, and the entrances animate `scale`, which
-   looks like nothing at all when it stalls.
+     DEPTH    it renders between the blobs and the near bokeh, so particles
+              drift IN FRONT of it and the scrim and grain paint over it.
+     FOCUS    blurred, because everything at that depth is out of focus.
+              A sharp element at the back of a soft room is the tell.
+     EDGE     feathered by a radial mask, so there is no rectangle. The
+              artwork dissolves into the dark instead of ending.
+     LIGHT    screen-blended, so the black is not drawn at all and the
+              linework reads as something the room is lit by.
+     CADENCE  78s, which sits between the blobs (54-92s) and the far bokeh
+              (104s). Deliberately NOT a short bob loop: a 3s float is the
+              single most generated animation on the web and it would
+              undo every other decision here.
+
+   Present only while the console is being unlocked. The opacity per stage
+   is declarative, so the resting state is correct without the transition
+   ever running; the transition only describes the travel between them.
    ============================================================ */
 
-.profile-art {
+.ambient__figure {
+  position: absolute;
+  inset: -12%;
+  background-image: url("/luffy.webp");
+  background-repeat: no-repeat;
+  /* Low and right, bleeding off the corner. The centre stays dark because
+     the lock screen's mark and instruction are dead centre and the figure
+     has to give them a stage — the first framing put the FC mark squarely on
+     his chest. It also puts the artwork where this site already keeps big
+     art: the home screen's key art occupies the same side. */
+  background-position: 80% 70%;
+  background-size: min(82%, 62rem) auto;
   mix-blend-mode: screen;
-  opacity: 0.85;
-  animation:
-    art-settle 1100ms var(--ease-out-expo) both,
-    profile-art-drift 24s ease-in-out infinite alternate 1100ms;
+  filter: blur(1.9px);
+  /* Feathered on the same centre as the artwork, so the falloff is
+     concentric with the figure rather than cutting across it. */
+  --figure-feather: radial-gradient(
+    58% 62% at 80% 70%,
+    #000 30%,
+    transparent 78%
+  );
+  -webkit-mask-image: var(--figure-feather);
+  mask-image: var(--figure-feather);
+  opacity: 0;
+  transition: opacity 1600ms var(--ease-out-quart);
+  animation: figure-drift 78s ease-in-out infinite alternate;
 }
 
-/* Scale only. Opacity is a resting value, never an animated one. */
-@keyframes art-settle {
+/* The one stage it belongs to. Every other stage resolves to 0 above. */
+[data-stage="lock"] .ambient__figure {
+  opacity: 0.38;
+}
+
+/* Portrait phones get their own framing rather than the desktop crop scaled
+   down. The artwork is 1.5:1 and the screen is 0.5:1, so a width-constrained
+   copy of the desktop composition showed only smoke and a sandal — abstract
+   texture rather than a character, which defeats the point of it being there.
+   Here it is scaled past the viewport and anchored to the bottom, so the face
+   reads and the centred mark still has clear dark space above it. */
+@media (max-width: 48rem) {
+  .ambient__figure {
+    background-position: 54% 96%;
+    background-size: min(165%, 28rem) auto;
+    --figure-feather: radial-gradient(
+      70% 52% at 54% 96%,
+      #000 34%,
+      transparent 80%
+    );
+  }
+
+  [data-stage="lock"] .ambient__figure {
+    opacity: 0.42;
+  }
+}
+
+@keyframes figure-drift {
   from {
-    scale: 1.06;
+    translate: -1.1% 0.7%;
+    scale: 1.02;
   }
   to {
-    scale: 1;
-  }
-}
-
-@keyframes profile-art-drift {
-  from {
-    translate: 0 0;
-  }
-  to {
-    translate: -1.6% 1.3%;
-  }
-}
-
-.screensaver {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-screensaver);
-  display: grid;
-  place-items: center;
-  /* OPAQUE, and that is load-bearing rather than a preference.
-
-     `mix-blend-mode` on the artwork blends against the backdrop inside this
-     element's stacking context, and z-index plus position:fixed makes this
-     element one. With a translucent background the screened artwork resolved
-     to full alpha across its own bounds while everything around it stayed
-     see-through, so the image's black rectangle punched a visible hole in
-     the dim. Against an opaque ground the black screens away to exactly the
-     ground colour and the linework is all that is left, which is the whole
-     reason this asset needs no cutout. */
-  background-color: var(--color-void);
-}
-
-.screensaver__art {
-  width: min(72vw, 54rem);
-  height: auto;
-  mix-blend-mode: screen;
-  opacity: 0.92;
-  /* A screensaver that never moves is just a cover. Slow travel, the way a
-     console drifts its idle art to avoid burning a fixed image in. */
-  animation:
-    art-settle 800ms var(--ease-out-expo) both,
-    screensaver-drift 34s ease-in-out infinite alternate 800ms;
-}
-
-@keyframes screensaver-drift {
-  from {
-    translate: -3% -2%;
-  }
-  to {
-    translate: 3% 2%;
+    translate: 1.3% -0.9%;
+    scale: 1.07;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* The drift is atmosphere with no state in it, so it stops entirely. The
-     resting opacity already carries both elements, so removing the animation
-     removes nothing but the movement. */
-  .profile-art,
-  .screensaver__art {
+  /* The drift is atmosphere with no state in it, so it stops. Presence is
+     carried by the per-stage opacity, which is not animated, so nothing
+     disappears here. */
+  .ambient__figure {
     animation: none !important;
   }
 }
 
-/* The drift joins the backgrounded-tab pause. Safe to freeze now: every
-   keyframe here is a position or a scale, and none of them hides anything. */
-[data-idle] .profile-art,
-[data-idle] .screensaver__art {
+[data-idle] .ambient__figure {
   animation-play-state: paused;
 }
