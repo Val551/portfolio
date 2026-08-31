@@ -1,11 +1,14 @@
 import { skills } from "@/content/skills";
+import { SkillMark, hasSkillMark } from "@/components/ui/brandMarks";
 
 /**
  * Grouped rather than a flat wall of fifteen equal tiles: a flat list implies
  * a recruiter should weigh Rust and HTML/CSS equally.
  *
- * Deliberately text chips rather than icons: there is no icon source for
- * these technologies, and two-letter monograms would read as filler.
+ * Each chip carries its technology's own mark. The marks are the vendors'
+ * official geometry, not two-letter monograms, and the five entries that are
+ * concepts rather than products (REST, sockets, pthreads) get a drawn glyph
+ * at neutral chroma instead of an invented logo — see brandMarks.tsx.
  */
 export function SkillsHub() {
   return (
@@ -20,8 +23,9 @@ export function SkillsHub() {
             {group.items.map((item) => (
               <li
                 key={item}
-                className="chip"
+                className={hasSkillMark(item) ? "chip chip--marked" : "chip"}
               >
+                <SkillMark name={item} />
                 {item}
               </li>
             ))}

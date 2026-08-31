@@ -1194,6 +1194,7 @@ textarea.field {
 .chip {
   display: inline-flex;
   align-items: center;
+  gap: 0.4375rem;
   border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--hairline);
   padding: 0.25rem 0.625rem;
@@ -1202,10 +1203,93 @@ textarea.field {
   color: var(--color-ink-muted);
 }
 
+/* A chip carrying a logo. The mark reads as optically heavier than a letter
+   at the same width, so the left padding comes in to keep the chip's ink
+   centred rather than left-loaded. */
+.chip--marked {
+  padding-left: 0.4375rem;
+}
+
+.chip__mark {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  /* Marks are drawn on a 24 square and letterboxed inside it, so a wide
+     logo (AWS) and a tall one (Vite) share an optical size. Nothing is
+     scaled to fill; nothing is stretched. */
+}
+
+/* The drawn glyphs sit a step below the vendor marks: no brand colour to
+   claim, so they take the chip's own ink at the faint end. */
+.chip__mark--drawn {
+  color: var(--color-ink-faint);
+}
+
 /* Supporting detail inside a library card rather than the content itself. */
 .chip--compact {
   padding: 0.125rem 0.5rem;
   color: var(--color-ink-faint);
+}
+
+/* ============================================================
+   Organisation tile
+
+   The logo beside an experience entry, built as a console tile rather than
+   as an avatar: the same 14% radius, the same top-lit face, the same inset
+   hairline with a lit top edge and a dark bottom edge as the home row. It
+   inherits --art-hue from the open hub, so the five tiles sit in
+   Experience's own instrument colour instead of introducing a sixth.
+
+   Fixed square, never stretched: the marks inside are letterboxed on a
+   shared 24 grid, so Microsoft's four squares and MoonRanger's rover carry
+   the same optical weight at the same size.
+   ============================================================ */
+
+.orgmark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 14%;
+  background-image: linear-gradient(
+    to bottom,
+    oklch(0.225 0.006 var(--art-hue, 220)),
+    oklch(0.145 0.004 var(--art-hue, 220))
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--tile-hairline),
+    inset 0 1px 0 var(--tile-lit-edge),
+    inset 0 -1px 0 var(--tile-dark-edge);
+  color: var(--color-ink-muted);
+}
+
+.orgmark > svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+/* A stroked glyph carries less ink than a filled silhouette at the same box,
+   so MoonRanger's rover runs a size up to match Microsoft's weight. */
+.orgmark > .orgmark__drawn {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* MoonRanger's rover is stroked, not filled, so it needs a touch more size
+   than a solid silhouette to match its weight. */
+.orgmark__drawn {
+  color: oklch(0.86 0.02 250);
+}
+
+/* Carnegie Mellon publishes a wordmark and a seal, neither of which survives
+   40px. Three letters in the site's own type, in CMU cardinal lifted to this
+   chassis by the same rule every other mark obeys. */
+.orgmark__monogram {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: oklch(0.72 0.145 21.6);
 }
 
 /* The cover art each project card leads with.

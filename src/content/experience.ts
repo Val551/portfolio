@@ -13,7 +13,7 @@ export const experience: Activity[] = [
   {
     id: "cmu-ta-fullstack",
     organization: "Carnegie Mellon University",
-    role: "Teaching Assistant · 18-351 Full-Stack Software Development for Engineers",
+    role: "Teaching Assistant · Full-Stack Software Development for Engineers",
     period: "Aug 2026 – Present",
     bullets: [
       "Support students building end-to-end web applications on a client-server architecture, with a plain web-stack front end against a TypeScript and NoSQL back end",
